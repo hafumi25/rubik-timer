@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#f4f6f9" />
+<title>CubeTimer Pro</title>
+<style>
+  :root{
+    /* ---- LIGHT THEME (default) ---- */
+    --bg:#f4f6f9;
+    --bg-grad: radial-gradient(1200px 800px at 15% -15%, #e2ecfb 0%, #f4f6f9 58%) fixed;
+    --panel:#ffffff;
+    --panel2:#eef2f7;
+    --border:#d9e0e8;
+    --border-soft:rgba(217,224,232,.85);
+    --text:#1a2330;
+    --muted:#68758a;
+    --faint:#95a2b3;
+    --accent:#2563eb;
+    --accent-hover:#1d4ed8;
+    --green:#128a4a;
+    --red:#d1242f;
+    --yellow:#b45309;
+    --topbar-bg:rgba(255,255,255,.8);
+    --sidebar-bg:rgba(255,255,255,.62);
+    --hover:#eef3fa;
+    --scroll:#c6d0dc;
+    --shadow:0 24px 60px rgba(15,30,60,.16);
+    --chart-grid:rgba(150,168,190,.42);
+    --chart-best:rgba(18,138,74,.42);
+    --chart-line:#2563eb;
+    --chart-dnf:#d1242f;
+    --chart-empty:rgba(104,117,138,.7);
+    --radius:10px;
+  }
+  [data-theme="dark"]{
+    --bg:#0d1117;
+    --bg-grad: radial-gradient(1200px 800px at 15% -15%, #17212e 0%, #0d1117 55%) fixed;
+    --panel:#151b23;
+    --panel2:#1b232d;
+    --border:#283039;
+    --border-soft:rgba(40,48,57,.6);
+    --text:#e6edf3;
+    --muted:#8b949e;
+    --faint:#5a6673;
+    --accent:#3b82f6;
+    --accent-hover:#2f6fd8;
+    --green:#3fb950;
+    --red:#f85149;
+    --yellow:#e3b341;
+    --topbar-bg:rgba(21,27,35,.7);
+    --sidebar-bg:rgba(21,27,35,.55);
+    --hover:#1a222c;
+    --scroll:#333c47;
+    --shadow:0 24px 60px rgba(0,0,0,.55);
+    --chart-grid:rgba(40,48,57,.9);
+    --chart-best:rgba(63,185,80,.45);
+    --chart-line:#3b82f6;
+    --chart-dnf:#f85149;
+    --chart-empty:rgba(139,148,158,.55);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; margin:0; }
+  body{
+    background:var(--bg-grad);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;
+    overflow:hidden;
+    transition:background-color .2s, color .2s;
+  }
+  button, select, input{ font-family:inherit; font-size:inherit; color:inherit; }
+  button{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:6px 10px;
+    cursor:pointer;
+    transition:.15s background,.15s border-color,.15s color;
+  }
+  button:hover{ background:var(--hover); border-color:var(--faint); }
+  button:active{ transform:translateY(1px); }
+  select{
+    background:var(--panel2); border:1px solid var(--border);
+    border-radius:8px; padding:6px 8px; cursor:pointer;
+  }
+  kbd{
+    background:var(--panel2); border:1px solid var(--border); border-bottom-width:2px;
+    border-radius:5px; padding:1px 5px; font-size:11px; font-family:ui-monospace,monospace;
+    color:var(--muted);
+  }
+
+  /* ============ LAYOUT ============ */
+  #app{ display:flex; flex-direction:column; height:100dvh; }
+
+  .topbar{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+    background:var(--topbar-bg);
+    backdrop-filter:blur(8px);
+    flex-shrink:0;
+  }
+  .logo{ font-weight:700; letter-spacing:.3px; font-size:15px; white-space:nowrap; }
+  .logo span{ color:var(--accent); }
+  .logo em{ font-style:normal; color:var(--muted); font-weight:500; font-size:11px; letter-spacing:1px; text-transform:uppercase; }
+  .spacer{ flex:1; }
+  .icon-btn{ padding:6px 9px; line-height:1; }
+  #sessionSelect{ max-width:150px; }
+
+  main{ flex:1; display:flex; min-height:0; }
+
+  /* ============ TIMER AREA ============ */
+  .timer-area{
+    flex:1; min-width:0;
+    display:flex; flex-direction:column;
+    padding:18px 22px 10px;
+  }
+  .scramble-wrap{
+    display:flex; align-items:center; gap:12px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:12px 16px;
+    flex-shrink:0;
+    box-shadow:0 1px 2px rgba(15,30,60,.04);
+  }
+  .scramble{
+    flex:1;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:15px; line-height:1.6; letter-spacing:.5px;
+    color:var(--text);
+    word-spacing:4px;
+    user-select:all;
+    min-height:24px;
+    opacity:.88;
+  }
+  .ghost-btn{ background:transparent; color:var(--muted); white-space:nowrap; font-size:12px; }
+  .ghost-btn:hover{ color:var(--text); background:var(--panel2); }
+
+  .timer-stage{
+    flex:1;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:14px;
+    cursor:pointer;
+    user-select:none;
+    touch-action:none;
+    min-height:0;
+  }
+  .timer{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+    font-weight:600;
+    font-size:clamp(56px,13vw,150px);
+    line-height:1;
+    letter-spacing:-2px;
+    color:var(--text);
+    transition:color .09s linear;
+    text-align:center;
+  }
+  .timer[data-phase="inspecting"]{ color:var(--muted); }
+  .timer[data-phase="holding"]{ color:var(--red); }
+  .timer[data-phase="ready"]{ color:var(--green); }
+  .timer[data-phase="running"]{ color:var(--accent); }
+  .timer.warn{ color:var(--red) !important; }
+
+  .hint{
+    color:var(--muted); font-size:13px; letter-spacing:.4px;
+    text-align:center; min-height:18px;
+  }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar{
+    width:410px; flex-shrink:0;
+    display:flex; flex-direction:column;
+    border-left:1px solid var(--border);
+    background:var(--sidebar-bg);
+    min-height:0;
+  }
+  .stats-grid{
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:1px; background:var(--border);
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .stat{
+    background:var(--panel); padding:9px 10px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .stat .k{ font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); }
+  .stat .v{
+    font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;
+    font-size:15px; font-weight:600;
+  }
+  .stat .v.good{ color:var(--green); }
+  .stat .v.bad{ color:var(--red); }
+
+  .avg-table{
+    width:100%; border-collapse:collapse; flex-shrink:0;
+    font-size:12.5px;
+    background:var(--panel);
+  }
+  .avg-table th{
+    text-align:right; font-weight:500; color:var(--muted);
+    padding:6px 12px; font-size:10.5px; text-transform:uppercase; letter-spacing:.7px;
+    border-bottom:1px solid var(--border);
+  }
+  .avg-table th:first-child{ text-align:left; }
+  .avg-table td{
+    padding:5px 12px; text-align:right;
+    font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .avg-table td:first-child{ text-align:left; color:var(--muted); font-family:inherit; }
+  .avg-table td.best{ color:var(--green); }
+
+  .chart-box{
+    height:110px; flex-shrink:0;
+    border-bottom:1px solid var(--border);
+    padding:6px 4px;
+    background:var(--panel);
+  }
+  #chart{ width:100%; height:100%; display:block; }
+
+  .list-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 12px;
+    font-size:11px; text-transform:uppercase; letter-spacing:.9px; color:var(--muted);
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+    background:var(--panel);
+  }
+
+  .solve-list{
+    list-style:none; margin:0; padding:0;
+    flex:1; overflow-y:auto; min-height:0;
+    scrollbar-width:thin; scrollbar-color:var(--scroll) transparent;
+    background:var(--panel);
+  }
+  .solve-list::-webkit-scrollbar{ width:8px; }
+  .solve-list::-webkit-scrollbar-thumb{ background:var(--scroll); border-radius:4px; }
+  .empty-msg{ padding:26px; text-align:center; color:var(--faint); font-size:12.5px; }
+
+  .solve{
+    display:grid;
+    grid-template-columns:34px 1fr 62px 62px 78px;
+    align-items:center; gap:4px;
+    padding:6px 10px;
+    border-bottom:1px solid var(--border-soft);
+    font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums;
+    font-size:13px;
+    position:relative;
+  }
+  .solve:hover{ background:var(--hover); }
+  .solve .idx{ color:var(--faint); font-size:11px; }
+  .solve .t{ font-weight:600; font-size:14px; }
+  .solve .t sup{ color:var(--yellow); font-size:9px; margin-left:1px; }
+  .solve.dnf .t{ color:var(--red); font-size:12.5px; }
+  .solve .a{ color:var(--muted); font-size:11px; text-align:right; opacity:.85; }
+  .solve .a.pb{ color:var(--green); opacity:1; font-weight:600; }
+  .solve.pb-single .t{ color:var(--green); }
+  .solve .acts{
+    display:flex; gap:3px; justify-content:flex-end;
+    opacity:0; transition:opacity .12s;
+  }
+  .solve:hover .acts{ opacity:1; }
+  .solve .acts button{
+    padding:1px 5px; font-size:10px; border-radius:5px;
+    background:var(--panel2); color:var(--muted); border-color:var(--border);
+  }
+  .solve .acts button:hover{ color:var(--text); background:var(--hover); }
+  .solve .acts button[data-act="del"]:hover{ color:var(--red); border-color:var(--red); }
+
+  .list-tools{
+    display:flex; gap:6px; padding:9px 10px;
+    border-top:1px solid var(--border);
+    flex-shrink:0;
+    background:var(--panel);
+  }
+  .list-tools button{ flex:1; font-size:12px; }
+
+  /* ============ MODAL ============ */
+  .modal{
+    position:fixed; inset:0; background:rgba(20,30,45,.35);
+    display:none; align-items:center; justify-content:center; z-index:50;
+    padding:16px;
+    backdrop-filter:blur(2px);
+  }
+  .modal.open{ display:flex; }
+  .modal-card{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:20px; width:min(430px,100%);
+    box-shadow:var(--shadow);
+  }
+  .modal-card h2{ margin:0 0 16px; font-size:16px; letter-spacing:.3px; }
+  .modal-card .row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 0; border-bottom:1px solid var(--border-soft);
+    font-size:13px;
+  }
+  .modal-card .row:last-of-type{ border-bottom:none; }
+  .modal-card input[type="number"]{
+    width:80px; background:var(--panel2); border:1px solid var(--border);
+    border-radius:7px; padding:5px 8px; text-align:right;
+  }
+  .modal-card input[type="checkbox"]{
+    width:18px; height:18px; accent-color:var(--accent); cursor:pointer;
+  }
+  .modal-actions{ display:flex; justify-content:flex-end; margin-top:16px; }
+  .modal-actions button{
+    background:var(--accent); border-color:var(--accent); color:#fff;
+    padding:8px 20px; font-weight:600;
+  }
+  .modal-actions button:hover{ background:var(--accent-hover); border-color:var(--accent-hover); }
+
+  /* ============ TOAST ============ */
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px);
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    padding:9px 18px; border-radius:10px; font-size:13px;
+    opacity:0; pointer-events:none; transition:.25s; z-index:80;
+    box-shadow:var(--shadow);
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 880px){
+    main{ flex-direction:column; }
+    .sidebar{
+      width:auto; border-left:none; border-top:1px solid var(--border);
+      flex:1; min-height:0;
+    }
+    .timer-area{ flex:0 0 auto; padding:12px 14px 4px; }
+    .timer-stage{ padding:16px 0; }
+    .chart-box{ height:80px; }
+    .stats-grid{ grid-template-columns:repeat(3,1fr); }
+    #sessionSelect{ max-width:110px; }
+    .logo em{ display:none; }
+    .solve{ grid-template-columns:30px 1fr 56px 56px 70px; font-size:12px; }
+    .solve .acts{ opacity:1; }
+  }
+  @media (max-width: 560px){
+    .topbar{ flex-wrap:wrap; gap:6px; padding:8px 10px; }
+    .logo{ font-size:13px; }
+    .solve{ grid-template-columns:26px 1fr 52px 70px; }
+    .solve .a:nth-of-type(2){ display:none; } /* hide ao12 on tiny screens */
+    .scramble{ font-size:12.5px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="logo">Cube<span>Timer</span> <em>Pro</em></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="sessionSelect" title="Session"></select>
+      <button class="icon-btn" id="addSession" title="New session">＋</button>
+      <button class="icon-btn" id="renameSession" title="Rename session">✎</button>
+      <button class="icon-btn" id="deleteSession" title="Delete session">🗑</button>
+    </div>
+    <div class="spacer"></div>
+    <select id="puzzleSelect" title="Puzzle">
+      <option value="2x2">2×2</option>
+      <option value="3x3">3×3</option>
+      <option value="4x4">4×4</option>
+      <option value="5x5">5×5</option>
+    </select>
+    <button class="icon-btn" id="themeBtn" title="Toggle light / dark">🌙</button>
+    <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+  </header>
+
+  <main>
+    <section class="timer-area">
+      <div class="scramble-wrap">
+        <div id="scramble" class="scramble" title="Click to copy">…</div>
+        <button id="newScrambleBtn" class="ghost-btn">New scramble <kbd>N</kbd></button>
+      </div>
+      <div class="timer-stage" id="timerStage">
+        <div id="timer" class="timer" data-phase="idle">0.00</div>
+        <div id="hint" class="hint"></div>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="stats-grid" id="statsGrid"></div>
+      <table class="avg-table" id="avgTable"></table>
+      <div class="chart-box"><canvas id="chart"></canvas></div>
+      <div class="list-head"><span>Solves</span><span id="listCount"></span></div>
+      <ol class="solve-list" id="solveList"></ol>
+      <div class="list-tools">
+        <button id="exportBtn">Export</button>
+        <button id="importBtn">Import</button>
+        <button id="clearBtn">Clear</button>
+        <input type="file" id="fileInput" accept="application/json" hidden />
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-card">
+    <h2>Settings</h2>
+    <label class="row"><span>Inspection timer (15s)</span><input type="checkbox" id="setInspection"></label>
+    <label class="row"><span>Inspection duration (seconds)</span><input type="number" id="setInspTime" min="3" max="60" step="1"></label>
+    <label class="row"><span>Automatic inspection penalties</span><input type="checkbox" id="setAutoPenalty"></label>
+    <label class="row"><span>Hold time to arm (ms)</span><input type="number" id="setHold" min="0" max="2000" step="50"></label>
+    <label class="row"><span>Hide time while solving</span><input type="checkbox" id="setHide"></label>
+    <label class="row"><span>Inspection beeps</span><input type="checkbox" id="setSound"></label>
+    <div class="modal-actions"><button id="closeSettings">Done</button></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CubeTimer Pro
+   ========================================================= */
+
+/* ---------------- Utils ---------------- */
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function formatMs(ms, dec = 2){
+  if (ms === null || ms === undefined) return '—';
+  if (!isFinite(ms)) return 'DNF';
+  const total = ms / 1000;
+  const m = Math.floor(total / 60);
+  const s = total - m * 60;
+  if (m > 0) return m + ':' + (s < 10 ? '0' : '') + s.toFixed(dec);
+  return s.toFixed(dec);
+}
+
+function effMs(solve){
+  if (solve.penalty === 'DNF') return Infinity;
+  return solve.ms + (solve.penalty === '+2' ? 2000 : 0);
+}
+
+/* ---------------- WCA averages ---------------- */
+function trimCount(n){
+  if (n >= 100) return Math.ceil(n * 0.05); // 5 best + 5 worst for ao100
+  if (n >= 5)   return 1;                   // 1 best + 1 worst
+  return 0;                                 // mo3 / moN
+}
+
+function averageWindow(values, n){
+  const trim = trimCount(n);
+  const sorted = [...values].sort((a, b) => a - b);
+  const kept = sorted.slice(trim, n - trim);
+  if (!kept.length) return Infinity;
+  let sum = 0;
+  for (const v of kept){
+    if (!isFinite(v)) return Infinity; // too many DNFs in the window
+    sum += v;
+  }
+  return sum / kept.length;
+}
+
+function currentAverage(solves, n){
+  if (solves.length < n) return null;
+  return averageWindow(solves.slice(-n).map(effMs), n);
+}
+
+function bestAverage(solves, n){
+  if (solves.length < n) return null;
+  let best = Infinity;
+  for (let i = 0; i + n <= solves.length; i++){
+    const v = averageWindow(solves.slice(i, i + n).map(effMs), n);
+    if (v < best) best = v;
+  }
+  return best;
+}
+
+/* ---------------- Scramble generator ---------------- */
+const AXIS = { U:'y', D:'y', L:'x', R:'x', F:'z', B:'z' };
+
+function generateScramble(puzzle){
+  const conf = {
+    '2x2': { faces:['U','R','F'],              len:11, wide:0    },
+    '3x3': { faces:['U','D','L','R','F','B'],  len:20, wide:0    },
+    '4x4': { faces:['U','D','L','R','F','B'],  len:40, wide:0.35 },
+    '5x5': { faces:['U','D','L','R','F','B'],  len:60, wide:0.45 }
+  }[puzzle] || { faces:['U','D','L','R','F','B'], len:20, wide:0 };
+
+  const moves = [];
+  let prevFace = null, prevAxis = null, prevPrevAxis = null;
+  const suffixes = ['', "'", '2'];
+
+  for (let i = 0; i < conf.len; i++){
+    let pool = conf.faces.filter(f => f !== prevFace);
+    // never allow 3 consecutive moves on the same axis
+    if (prevAxis && prevAxis === prevPrevAxis){
+      const filtered = pool.filter(f => AXIS[f] !== prevAxis);
+      if (filtered.length) pool = filtered;
+    }
+    const face = pool[(Math.random() * pool.length) | 0];
+    const wide = Math.random() < conf.wide;
+    const suf = suffixes[(Math.random() * 3) | 0];
+    moves.push(face + (wide ? 'w' : '') + suf);
+
+    prevPrevAxis = prevAxis;
+    prevAxis = AXIS[face];
+    prevFace = face;
+  }
+  return moves.join(' ');
+}
+
+/* ---------------- Persistence ---------------- */
+const LS_KEY = 'cubetimer-pro-v2';
+
+const DEFAULT_SETTINGS = {
+  inspection: true,
+  inspectionTime: 15,
+  autoPenalty: true,
+  holdTime: 300,
+  hideWhileSolving: false,
+  sound: true,
+  puzzle: '3x3',
+  theme: 'light'
+};
+
+function makeSession(name){
+  return { id: uid(), name, solves: [], created: Date.now() };
+}
+
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw){
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.sessions) && parsed.sessions.length){
+        parsed.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.settings || {});
+        if (!parsed.sessions.some(s => s.id === parsed.activeSessionId)){
+          parsed.activeSessionId = parsed.sessions[0].id;
+        }
+        return parsed;
+      }
+    }
+  }catch(err){ console.warn('Failed to load save:', err); }
+  const s = makeSession('Session 1');
+  return { sessions:[s], activeSessionId: s.id, settings: {...DEFAULT_SETTINGS} };
+}
+
+let db = loadDB();
+
+function saveDB(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(db)); }
+  catch(err){ console.warn('Failed to save:', err); }
+}
+
+function activeSession(){
+  return db.sessions.find(s => s.id === db.activeSessionId) || db.sessions[0];
+}
+
+/* ---------------- Theme ---------------- */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = $('#themeBtn');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#0d1117' : '#f4f6f9');
+  // repaint chart with new palette
+  if (typeof drawChart === 'function') drawChart();
+}
+
+/* ---------------- DOM refs ---------------- */
+const timerEl      = $('#timer');
+const hintEl       = $('#hint');
+const scrambleEl   = $('#scramble');
+const solveListEl  = $('#solveList');
+const statsGridEl  = $('#statsGrid');
+const avgTableEl   = $('#avgTable');
+const sessionSel   = $('#sessionSelect');
+const puzzleSel    = $('#puzzleSelect');
+const listCountEl  = $('#listCount');
+const chartCanvas  = $('#chart');
+const timerStage   = $('#timerStage');
+
+/* ---------------- Timer state ---------------- */
+let phase = 'idle';           // idle | inspecting | holding | ready | running
+let currentScramble = '';
+let inspectionActive = false;
+let inspectionStart = 0;
+let startTime = 0;
+let pendingPenalty = 'ok';
+let holdTimeout = null;
+let idleText = '0.00';
+let beeped = {};
+let audioCtx = null;
+
+const MAX_ROWS = 500;
+
+/* ---------------- Sound ---------------- */
+function beep(freq, dur){
+  if (!db.settings.sound) return;
+  try{
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.14, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur / 1000);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur / 1000 + 0.02);
+  }catch(e){ /* ignore */ }
+}
+
+/* ---------------- Phase management ---------------- */
+function setPhase(p){
+  phase = p;
+  timerEl.dataset.phase = p;
+  const hints = {
+    idle:       'Hold <kbd>Space</kbd> to start',
+    inspecting: '<kbd>Space</kbd> to start · <kbd>Esc</kbd> to cancel',
+    holding:    'Keep holding…',
+    ready:      'Release to start',
+    running:    'Press any key to stop'
+  };
+  hintEl.innerHTML = hints[p] || '';
+}
+
+/* ---------------- Main loop ---------------- */
+function loop(){
+  if (phase === 'running'){
+    timerEl.textContent = db.settings.hideWhileSolving
+      ? '•••'
+      : formatMs(performance.now() - startTime, 2);
+  } else if (inspectionActive){
+    updateInspection();
+  }
+  requestAnimationFrame(loop);
+}
+
+function updateInspection(){
+  const elapsed = performance.now() - inspectionStart;
+  const remain = db.settings.inspectionTime * 1000 - elapsed;
+
+  if (remain > 0){
+    const secs = Math.ceil(remain / 1000);
+    timerEl.textContent = secs;
+    timerEl.classList.remove('warn');
+    if (secs === 8  && !beeped[8]) { beep(660, 90); beeped[8] = true; }
+    if (secs === 12 && !beeped[12]){ beep(660, 90); beeped[12] = true; }
+  } else {
+    const over = -remain;
+    timerEl.classList.add('warn');
+    timerEl.textContent = over <= 2000 ? '+2' : 'DNF';
+    if (!beeped[0]){ beep(990, 350); beeped[0] = true; }
+  }
+}
+
+/* ---------------- Actions ---------------- */
+function startInspection(){
+  inspectionActive = true;
+  inspectionStart = performance.now();
+  beeped = {};
+  setPhase('inspecting');
+}
+
+function beginHold(){
+  if (phase === 'holding' || phase === 'ready' || phase === 'running') return;
+  setPhase('holding');
+  if (!inspectionActive) timerEl.textContent = '0.00';
+  clearTimeout(holdTimeout);
+  holdTimeout = setTimeout(() => {
+    if (phase === 'holding'){
+      setPhase('ready');
+      beep(880, 40);
+    }
+  }, Math.max(0, db.settings.holdTime));
+}
+
+function releaseSpace(){
+  if (phase === 'holding'){
+    clearTimeout(holdTimeout);
+    holdTimeout = null;
+    if (inspectionActive){
+      setPhase('inspecting');
+    } else {
+      setPhase('idle');
+      timerEl.textContent = idleText;
+    }
+    return;
+  }
+  if (phase === 'ready'){
+    startSolve();
+  }
+}
+
+function startSolve(){
+  clearTimeout(holdTimeout);
+  holdTimeout = null;
+
+  pendingPenalty = 'ok';
+  if (inspectionActive && db.settings.autoPenalty){
+    const over = performance.now() - inspectionStart - db.settings.inspectionTime * 1000;
+    if (over > 2000) pendingPenalty = 'DNF';
+    else if (over > 0) pendingPenalty = '+2';
+  }
+
+  inspectionActive = false;
+  timerEl.classList.remove('warn');
+  setPhase('running');
+  startTime = performance.now();
+}
+
+function stopSolve(){
+  const ms = performance.now() - startTime;
+  const penalty = pendingPenalty;
+
+  setPhase('idle');
+  inspectionActive = false;
+
+  const beforeBest = bestSingle(activeSession().solves);
+  const beforeAo5  = bestAverage(activeSession().solves, 5);
+
+  addSolve(ms, penalty);
+
+  const solve = activeSession().solves[activeSession().solves.length - 1];
+  const eff = effMs(solve);
+  idleText = solve.penalty === 'DNF' ? 'DNF' : formatMs(eff, 2);
+  timerEl.textContent = idleText;
+
+  // celebratory toasts
+  if (solve.penalty !== 'DNF' && (beforeBest === null || eff < beforeBest)){
+    toast('🏆 New best single: ' + formatMs(eff, 2));
+  } else {
+    const afterAo5 = bestAverage(activeSession().solves, 5);
+    if (afterAo5 !== null && isFinite(afterAo5) && (beforeAo5 === null || !isFinite(beforeAo5) || afterAo5 < beforeAo5 - 0.001)){
+      toast('🔥 New best ao5: ' + formatMs(afterAo5, 2));
+    }
+  }
+}
+
+function handlePress(){
+  switch (phase){
+    case 'idle':
+      if (db.settings.inspection) startInspection();
+      else beginHold();
+      break;
+    case 'inspecting':
+      beginHold();
+      break;
+    case 'running':
+      stopSolve();
+      break;
+  }
+}
+
+function handleRelease(){
+  if (phase === 'holding' || phase === 'ready') releaseSpace();
+}
+
+function cancelAll(){
+  clearTimeout(holdTimeout);
+  holdTimeout = null;
+  if (phase !== 'idle'){
+    inspectionActive = false;
+    timerEl.classList.remove('warn');
+    setPhase('idle');
+    timerEl.textContent = idleText;
+  }
+}
+
+/* ---------------- Solve management ---------------- */
+function addSolve(ms, penalty){
+  const s = activeSession();
+  s.solves.push({
+    id: uid(),
+    ms: Math.round(ms),
+    penalty,
+    scramble: currentScramble,
+    puzzle: db.settings.puzzle,
+    date: Date.now()
+  });
+  currentScramble = generateScramble(db.settings.puzzle);
+  saveDB();
+  renderAll();
+}
+
+function deleteSolve(id){
+  const s = activeSession();
+  const i = s.solves.findIndex(x => x.id === id);
+  if (i >= 0){
+    s.solves.splice(i, 1);
+    saveDB();
+    renderAll();
+  }
+}
+
+function setPenalty(id, penalty){
+  const s = activeSession();
+  const solve = s.solves.find(x => x.id === id);
+  if (!solve) return;
+  solve.penalty = (solve.penalty === penalty && penalty !== 'ok') ? 'ok' : penalty;
+  saveDB();
+  renderAll();
+}
+
+function bestSingle(solves){
+  let best = null;
+  for (const s of solves){
+    if (s.penalty === 'DNF') continue;
+    const v = effMs(s);
+    if (best === null || v < best) best = v;
+  }
+  return best;
+}
+
+/* ---------------- Rendering ---------------- */
+function renderAll(){
+  renderScramble();
+  renderSessions();
+  renderSolveList();
+  renderStats();
+  drawChart();
+}
+
+function renderScramble(){
+  scrambleEl.textContent = currentScramble;
+}
+
+function renderSessions(){
+  sessionSel.innerHTML = db.sessions
+    .map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.solves.length})</option>`)
+    .join('');
+  sessionSel.value = db.activeSessionId;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function renderSolveList(){
+  const solves = activeSession().solves;
+  const n = solves.length;
+
+  if (!n){
+    solveListEl.innerHTML = '<li class="empty-msg">No solves yet — press Space to start</li>';
+    listCountEl.textContent = '0';
+    return;
+  }
+
+  // Pre-compute effective values + rolling averages
+  const eff = solves.map(effMs);
+  const ao5 = new Array(n);
+  const ao12 = new Array(n);
+  for (let i = 0; i < n; i++){
+    ao5[i]  = i >= 4  ? averageWindow(eff.slice(i - 4,  i + 1), 5)  : null;
+    ao12[i] = i >= 11 ? averageWindow(eff.slice(i - 11, i + 1), 12) : null;
+  }
+
+  // Running bests for PB highlighting
+  const pb5 = new Array(n).fill(false);
+  const pb12 = new Array(n).fill(false);
+  let b5 = Infinity, b12 = Infinity;
+  for (let i = 0; i < n; i++){
+    if (ao5[i]  !== null && isFinite(ao5[i])  && ao5[i]  < b5 ){ b5  = ao5[i];  pb5[i]  = true; }
+    if (ao12[i] !== null && isFinite(ao12[i]) && ao12[i] < b12){ b12 = ao12[i]; pb12[i] = true; }
+  }
+
+  const bestEver = bestSingle(solves);
+  const start = Math.max(0, n - MAX_ROWS);
+  const html = [];
+
+  for (let i = n - 1; i >= start; i--){
+    const s = solves[i];
+    const isDnf = s.penalty === 'DNF';
+    const val = effMs(s);
+    const isPB = !isDnf && bestEver !== null && Math.abs(val - bestEver) < 0.0001;
+
+    let timeHtml;
+    if (isDnf) timeHtml = 'DNF';
+    else timeHtml = formatMs(val, 2) + (s.penalty === '+2' ? '<sup>+2</sup>' : '');
+
+    html.push(
+      `<li class="solve${isDnf ? ' dnf' : ''}${isPB ? ' pb-single' : ''}" data-id="${s.id}">` +
+        `<span class="idx">${i + 1}</span>` +
+        `<span class="t">${timeHtml}</span>` +
+        `<span class="a${pb5[i] ? ' pb' : ''}">${ao5[i] !== null ? formatMs(ao5[i], 2) : '—'}</span>` +
+        `<span class="a${pb12[i] ? ' pb' : ''}">${ao12[i] !== null ? formatMs(ao12[i], 2) : '—'}</span>` +
+        `<span class="acts">` +
+          `<button data-act="p2"  title="Toggle +2">+2</button>` +
+          `<button data-act="dnf" title="Toggle DNF">DNF</button>` +
+          `<button data-act="del" title="Delete">✕</button>` +
+        `</span>` +
+      `</li>`
+    );
+  }
+
+  if (start > 0){
+    html.push(`<li style="padding:8px;text-align:center;color:var(--faint);font-size:11px">Showing last ${MAX_ROWS} of ${n} solves</li>`);
+  }
+
+  solveListEl.innerHTML = html.join('');
+  listCountEl.textContent = n + (n === 1 ? ' solve' : ' solves');
+}
+
+function renderStats(){
+  const solves = activeSession().solves;
+  const eff = solves.map(effMs);
+  const valid = eff.filter(isFinite);
+
+  const best = valid.length ? Math.min(...valid) : null;
+  const worst = valid.length ? Math.max(...valid) : null;
+  const mean = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+  const sd = valid.length > 1
+    ? Math.sqrt(valid.reduce((a, b) => a + (b - mean) * (b - mean), 0) / valid.length)
+    : null;
+
+  const dnfCount = solves.filter(s => s.penalty === 'DNF').length;
+
+  statsGridEl.innerHTML = `
+    <div class="stat"><span class="k">Solves</span><span class="v">${solves.length}</span></div>
+    <div class="stat"><span class="k">Best single</span><span class="v good">${formatMs(best, 2)}</span></div>
+    <div class="stat"><span class="k">Worst</span><span class="v">${formatMs(worst, 2)}</span></div>
+    <div class="stat"><span class="k">Mean</span><span class="v">${formatMs(mean, 2)}</span></div>
+    <div class="stat"><span class="k">Std dev</span><span class="v">${sd !== null ? formatMs(sd, 2) : '—'}</span></div>
+    <div class="stat"><span class="k">DNFs</span><span class="v ${dnfCount ? 'bad' : ''}">${dnfCount}</span></div>
+  `;
+
+  const rows = [5, 12, 50, 100];
+  let html = `<thead><tr><th>Average</th><th>Current</th><th>Best</th></tr></thead><tbody>`;
+  for (const k of rows){
+    const cur = currentAverage(solves, k);
+    const bst = bestAverage(solves, k);
+    const curTxt = cur === null ? '—' : (isFinite(cur) ? formatMs(cur, 2) : 'DNF');
+    const bstTxt = bst === null ? '—' : (isFinite(bst) ? formatMs(bst, 2) : 'DNF');
+    html += `<tr><td>ao${k}</td><td>${curTxt}</td><td class="best">${bstTxt}</td></tr>`;
+  }
+  html += `</tbody>`;
+  avgTableEl.innerHTML = html;
+}
+
+/* ---------------- Chart ---------------- */
+function cssVar(name, fallback){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+function drawChart(){
+  const rect = chartCanvas.getBoundingClientRect();
+  if (rect.width < 10 || rect.height < 10) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  chartCanvas.width = Math.round(rect.width * dpr);
+  chartCanvas.height = Math.round(rect.height * dpr);
+  const ctx = chartCanvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const cGrid  = cssVar('--chart-grid',  'rgba(150,168,190,.42)');
+  const cBest  = cssVar('--chart-best',  'rgba(18,138,74,.42)');
+  const cLine  = cssVar('--chart-line',  '#2563eb');
+  const cDnf   = cssVar('--chart-dnf',   '#d1242f');
+  const cEmpty = cssVar('--chart-empty', 'rgba(104,117,138,.7)');
+
+  const solves = activeSession().solves.slice(-100);
+  const pts = solves.map((s, i) => ({
+    i,
+    v: s.penalty === 'DNF' ? null : effMs(s)
+  }));
+  const valid = pts.filter(p => p.v !== null).map(p => p.v);
+
+  if (valid.length < 2){
+    ctx.fillStyle = cEmpty;
+    ctx.font = '12px -apple-system,system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Not enough data for a graph', w / 2, h / 2);
+    return;
+  }
+
+  const min = Math.min(...valid);
+  const max = Math.max(...valid);
+  const range = (max - min) || 1;
+  const padX = 10, padY = 12;
+  const X = i => padX + (w - padX * 2) * (pts.length > 1 ? i / (pts.length - 1) : 0.5);
+  const Y = v => padY + (h - padY * 2) * (1 - (v - min) / range);
+
+  // grid
+  ctx.strokeStyle = cGrid;
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 3; g++){
+    const y = padY + (h - padY * 2) * (g / 3);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  // best line
+  ctx.strokeStyle = cBest;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, Y(min));
+  ctx.lineTo(w, Y(min));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // series (breaks on DNF)
+  ctx.strokeStyle = cLine;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let started = false;
+  for (const p of pts){
+    if (p.v === null){ started = false; continue; }
+    if (!started){ ctx.moveTo(X(p.i), Y(p.v)); started = true; }
+    else ctx.lineTo(X(p.i), Y(p.v));
+  }
+  ctx.stroke();
+
+  // dots
+  for (const p of pts){
+    if (p.v === null){
+      // DNF marker
+      ctx.strokeStyle = cDnf;
+      ctx.lineWidth = 1.6;
+      const x = X(p.i), y = padY + 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y - 3); ctx.lineTo(x + 3, y + 3);
+      ctx.moveTo(x + 3, y - 3); ctx.lineTo(x - 3, y + 3);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = cLine;
+      ctx.beginPath();
+      ctx.arc(X(p.i), Y(p.v), 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+/* ---------------- Toast ---------------- */
+let toastTimer = null;
+function toast(msg){
+  let el = document.getElementById('toast');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* =========================================================
+   EVENT WIRING
+   ========================================================= */
+
+/* ---- Keyboard ---- */
+function isEditable(el){
+  if (!el) return false;
+  const t = el.tagName;
+  return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || el.isContentEditable;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    cancelAll();
+    document.getElementById('settingsModal').classList.remove('open');
+    return;
+  }
+  if (isEditable(e.target)) return;
+
+  if (e.code === 'Space'){
+    e.preventDefault();
+    if (e.repeat) return;
+    handlePress();
+    return;
+  }
+
+  if (phase === 'running' && !e.ctrlKey && !e.metaKey && !e.altKey){
+    e.preventDefault();
+    stopSolve();
+    return;
+  }
+
+  if (e.key === 'n' || e.key === 'N'){
+    if (phase === 'idle'){
+      currentScramble = generateScramble(db.settings.puzzle);
+      renderScramble();
+      toast('New scramble');
+    }
+  }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space'){
+    e.preventDefault();
+    if (isEditable(e.target)) return;
+    handleRelease();
+  }
+});
+
+/* ---- Pointer / touch on the timer stage ---- */
+timerStage.addEventListener('pointerdown', e => {
+  if (e.button !== undefined && e.button !== 0) return;
+  e.preventDefault();
+  try{ timerStage.setPointerCapture(e.pointerId); }catch(_){}
+  handlePress();
+});
+timerStage.addEventListener('pointerup', e => {
+  e.preventDefault();
+  handleRelease();
+});
+timerStage.addEventListener('pointercancel', () => handleRelease());
+timerStage.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---- Toolbar ---- */
+$('#newScrambleBtn').addEventListener('click', () => {
+  currentScramble = generateScramble(db.settings.puzzle);
+  renderScramble();
+  toast('New scramble');
+});
+
+scrambleEl.addEventListener('click', async () => {
+  try{
+    await navigator.clipboard.writeText(currentScramble);
+    toast('Scramble copied');
+  }catch(_){ toast('Copy failed'); }
+});
+
+puzzleSel.addEventListener('change', () => {
+  db.settings.puzzle = puzzleSel.value;
+  currentScramble = generateScramble(db.settings.puzzle);
+  saveDB();
+  renderScramble();
+});
+
+/* ---- Theme toggle ---- */
+$('#themeBtn').addEventListener('click', () => {
+  db.settings.theme = db.settings.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(db.settings.theme);
+  saveDB();
+});
+
+/* ---- Sessions ---- */
+sessionSel.addEventListener('change', () => {
+  db.activeSessionId = sessionSel.value;
+  saveDB();
+  renderAll();
+});
+
+$('#addSession').addEventListener('click', () => {
+  const name = prompt('Session name:', 'Session ' + (db.sessions.length + 1));
+  if (name === null) return;
+  const s = makeSession(name.trim() || ('Session ' + (db.sessions.length + 1)));
+  db.sessions.push(s);
+  db.activeSessionId = s.id;
+  saveDB();
+  renderAll();
+});
+
+$('#renameSession').addEventListener('click', () => {
+  const s = activeSession();
+  const name = prompt('Rename session:', s.name);
+  if (name === null) return;
+  s.name = name.trim() || s.name;
+  saveDB();
+  renderAll();
+});
+
+$('#deleteSession').addEventListener('click', () => {
+  if (db.sessions.length === 1){
+    toast('Cannot delete the only session');
+    return;
+  }
+  const s = activeSession();
+  if (!confirm(`Delete session "${s.name}" and its ${s.solves.length} solves?`)) return;
+  db.sessions = db.sessions.filter(x => x.id !== s.id);
+  db.activeSessionId = db.sessions[0].id;
+  saveDB();
+  renderAll();
+});
+
+/* ---- Solve list actions ---- */
+solveListEl.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const li = btn.closest('.solve');
+  const id = li.dataset.id;
+  const act = btn.dataset.act;
+  if (act === 'p2')  setPenalty(id, '+2');
+  if (act === 'dnf') setPenalty(id, 'DNF');
+  if (act === 'del') deleteSolve(id);
+});
+
+/* ---- Clear / export / import ---- */
+$('#clearBtn').addEventListener('click', () => {
+  const s = activeSession();
+  if (!s.solves.length) return;
+  if (!confirm(`Clear all ${s.solves.length} solves from "${s.name}"?`)) return;
+  s.solves = [];
+  saveDB();
+  renderAll();
+  toast('Session cleared');
+});
+
+$('#exportBtn').addEventListener('click', () => {
+  const data = {
+    app: 'CubeTimer Pro',
+    version: 2,
+    exported: new Date().toISOString(),
+    sessions: db.sessions,
+    activeSessionId: db.activeSessionId,
+    settings: db.settings
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cubetimer-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Exported');
+});
+
+$('#importBtn').addEventListener('click', () => $('#fileInput').click());
+
+$('#fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.sessions) || !parsed.sessions.length){
+        throw new Error('Invalid file format');
+      }
+      if (!confirm('Importing will REPLACE all current sessions. Continue?')) return;
+      db = {
+        sessions: parsed.sessions,
+        activeSessionId: parsed.activeSessionId && parsed.sessions.some(s => s.id === parsed.activeSessionId)
+          ? parsed.activeSessionId
+          : parsed.sessions[0].id,
+        settings: Object.assign({}, DEFAULT_SETTINGS, parsed.settings || {})
+      };
+      saveDB();
+      applyTheme(db.settings.theme);
+      syncSettingsUI();
+      puzzleSel.value = db.settings.puzzle;
+      renderAll();
+      toast('Import successful');
+    }catch(err){
+      alert('Import failed: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---- Settings modal ---- */
+const modal = $('#settingsModal');
+
+function syncSettingsUI(){
+  $('#setInspection').checked  = db.settings.inspection;
+  $('#setInspTime').value      = db.settings.inspectionTime;
+  $('#setAutoPenalty').checked = db.settings.autoPenalty;
+  $('#setHold').value          = db.settings.holdTime;
+  $('#setHide').checked        = db.settings.hideWhileSolving;
+  $('#setSound').checked       = db.settings.sound;
+}
+
+$('#settingsBtn').addEventListener('click', () => {
+  syncSettingsUI();
+  modal.classList.add('open');
+});
+$('#closeSettings').addEventListener('click', () => modal.classList.remove('open'));
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+$('#setInspection').addEventListener('change', e => {
+  db.settings.inspection = e.target.checked; saveDB();
+});
+$('#setInspTime').addEventListener('change', e => {
+  let v = parseInt(e.target.value, 10);
+  if (isNaN(v)) v = 15;
+  v = Math.min(60, Math.max(3, v));
+  e.target.value = v;
+  db.settings.inspectionTime = v;
+  saveDB();
+});
+$('#setAutoPenalty').addEventListener('change', e => {
+  db.settings.autoPenalty = e.target.checked; saveDB();
+});
+$('#setHold').addEventListener('change', e => {
+  let v = parseInt(e.target.value, 10);
+  if (isNaN(v)) v = 300;
+  v = Math.min(2000, Math.max(0, v));
+  e.target.value = v;
+  db.settings.holdTime = v;
+  saveDB();
+});
+$('#setHide').addEventListener('change', e => {
+  db.settings.hideWhileSolving = e.target.checked; saveDB();
+});
+$('#setSound').addEventListener('change', e => {
+  db.settings.sound = e.target.checked; saveDB();
+});
+
+/* ---- Misc ---- */
+window.addEventListener('resize', () => drawChart());
+window.addEventListener('orientationchange', () => setTimeout(drawChart, 250));
+
+// Prevent the page from scrolling when hammering the spacebar
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !isEditable(e.target)) e.preventDefault();
+}, { passive: false });
+
+// Blur buttons after clicking so Space never re-triggers them
+document.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (btn) btn.blur();
+});
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+applyTheme(db.settings.theme || 'light');
+currentScramble = generateScramble(db.settings.puzzle);
+puzzleSel.value = db.settings.puzzle;
+setPhase('idle');
+idleText = '0.00';
+timerEl.textContent = '0.00';
+renderAll();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
